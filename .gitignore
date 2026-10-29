@@ -1,0 +1,54 @@
+# Claude Code
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+**/CLAUDE.md
+**/CLAUDE.local.md
+.mcp.json
+
+# ESP-IDF
+# A configuração versionada é o sdkconfig.defaults (idf.py save-defconfig);
+# o sdkconfig é gerado a partir dele em cada build.
+build/
+build_*/
+sdkconfig
+sdkconfig.old
+managed_components/
+*.bin
+*.elf
+*.map
+
+# Ferramentas de C/C++ (clangd, ccache)
+.cache/
+.clangd
+compile_commands.json
+
+# Python (ferramentas e testes do ESP-IDF)
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# IDEs e editores
+.vscode/
+.idea/
+*.code-workspace
+*.swp
+*.swo
+*~
+
+# KiCad (PCB): backups, cache e estado local
+*-backups/
+_autosave-*
+*.kicad_prl
+fp-info-cache
+*.lck
+\#auto_saved_files\#
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Doc files
+docs/
