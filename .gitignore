@@ -52,3 +52,6 @@ desktop.ini
 
 # Doc files
 docs/
+
+# Testes locais no PC (não fazem parte do firmware)
+firmware/test_host/
