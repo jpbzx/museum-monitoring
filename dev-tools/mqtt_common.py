@@ -19,10 +19,20 @@ DEFAULT_SITE = "isep-dee"
 DEFAULT_ROOM = "sala-01"
 DEFAULT_DEVICE = "node-01"
 
+# Atalhos para brokers conhecidos; qualquer outro valor é usado como endereço.
+HOST_ALIASES = {
+    "dev": "broker.emqx.io",    # broker público da EMQX (sem autenticação, dados visíveis a todos)
+}
+
+
+def resolve_host(text: str) -> str:
+    return HOST_ALIASES.get(text, text)
+
 
 def add_connection_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--host", default=os.environ.get("MQTT_HOST", "localhost"),
-                        help="endereço do broker (omissão: $MQTT_HOST ou localhost)")
+    parser.add_argument("--host", type=resolve_host, default=os.environ.get("MQTT_HOST", "localhost"),
+                        help="endereço do broker, ou 'dev' para o broker público da EMQX "
+                             "(omissão: $MQTT_HOST ou localhost)")
     parser.add_argument("--port", type=int, default=int(os.environ.get("MQTT_PORT", "1883")),
                         help="porta do broker (omissão: $MQTT_PORT ou 1883)")
     parser.add_argument("--username", default=os.environ.get("MQTT_USERNAME"),
