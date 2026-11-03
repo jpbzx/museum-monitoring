@@ -12,4 +12,6 @@ idf_component_register(
         sensor_manager
         app_logic
         net_manager
+        provisioning
+        user_button
 )

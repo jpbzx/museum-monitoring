@@ -21,12 +21,20 @@
 #define APP_DEVICE_ID               "node-01"   /* TODO: derivar do MAC (esp_read_mac) */
 
 /* ---------------------------------------------------------------------------
+ * Access point de configuração (primeiro boot / após reset de 6 s)
+ * TODO: password fixa e igual em todas as boards é fraca; derivar do MAC ou
+ *       imprimir numa etiqueta (decisão do passo 9).
+ * ------------------------------------------------------------------------- */
+#define APP_PROV_AP_SSID_PREFIX     "museum-node"
+#define APP_PROV_AP_PASSWORD        "museum-setup"      /* 8-63 caracteres */
+#define APP_PROV_AP_CHANNEL         1
+
+/* ---------------------------------------------------------------------------
  * Wi-Fi (STA)
  * ------------------------------------------------------------------------- */
-#define APP_WIFI_SSID               "CHANGE_ME"
-#define APP_WIFI_PASSWORD           "CHANGE_ME"
-#define APP_WIFI_MAX_RETRY          5
-#define APP_WIFI_CONNECT_TIMEOUT_MS 15000
+/* SSID/password vêm da NVS (provisioning). Reconexão: tenta para sempre, com backoff exponencial. */
+#define APP_WIFI_BACKOFF_MIN_MS     1000
+#define APP_WIFI_BACKOFF_MAX_MS     30000
 
 /* ---------------------------------------------------------------------------
  * MQTT
@@ -38,9 +46,7 @@
  *                    ativa/desativa sensores
  *   config/state  -> configuração efetiva reportada (retained)
  * ------------------------------------------------------------------------- */
-#define APP_MQTT_BROKER_URI         "mqtt://192.168.1.10:1883"
-#define APP_MQTT_USERNAME           ""
-#define APP_MQTT_PASSWORD           ""
+/* URI, username e password do broker vêm da NVS (provisioning). */
 #define APP_MQTT_KEEPALIVE_S        60
 #define APP_MQTT_QOS_TELEMETRY      1
 
@@ -72,6 +78,8 @@
 /* Interface local */
 #define APP_PIN_STATUS_LED          GPIO_NUM_2
 #define APP_PIN_USER_BUTTON         GPIO_NUM_27     /* RTC GPIO: pode acordar do deep sleep (ext0) */
+#define APP_BUTTON_ACTIVE_LOW       true            /* pull-up interno + botão à massa */
+#define APP_BUTTON_LONG_PRESS_MS    6000            /* pressão longa: apagar credenciais */
 
 /* ---------------------------------------------------------------------------
  * Amostragem e energia (valores por omissão; o dashboard pode alterá-los)

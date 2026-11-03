@@ -24,8 +24,38 @@
 #include "app_types.h"
 #include "app_logic.h"
 #include "net_manager.h"
+#include "user_button.h"
+#include "provisioning.h"
 
 static const char *TAG = "main";
+
+/* Pressão longa: esquece a configuração e reinicia; no próximo boot a board arranca em modo configuração. */
+static void on_button_long_press(void *ctx)
+{
+    ESP_LOGW(TAG, "botão: a apagar credenciais e a reiniciar");
+    esp_err_t err = prov_erase();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "prov_erase falhou: %s", esp_err_to_name(err));
+    }
+    esp_restart();
+}
+
+/*
+ * Board sem credenciais: modo configuração. O AP fica a correr em background.
+ * O POST /save valida, grava na NVS e reinicia a board (em modo normal no próximo boot).
+ */
+static void enter_provisioning_mode(void)
+{
+    ESP_LOGW(TAG, "board não provisionada: modo configuração");
+
+    const prov_softap_config_t ap = {
+        .ssid_prefix = APP_PROV_AP_SSID_PREFIX,
+        .password    = APP_PROV_AP_PASSWORD,
+        .channel     = APP_PROV_AP_CHANNEL,
+    };
+    ESP_ERROR_CHECK(prov_start_softap(&ap));
+    ESP_ERROR_CHECK(prov_http_start());
+}
 
 /* Duração estática: as tarefas guardam ponteiros para estas estruturas. */
 static app_ctx_t s_ctx;
@@ -42,13 +72,23 @@ static const app_logic_config_t s_logic_cfg = {
     .power_mode      = APP_POWER_MODE_DEFAULT,
 };
 
+/* Credenciais lidas da NVS por prov_load() antes de arrancar a rede. Têm de ter duração
+ * estática: o net_manager guarda ponteiros para estes buffers (o endereço de um membro
+ * de um objeto estático é constante, por isso serve de inicializador). */
+static prov_creds_t s_creds;
+
 static const net_manager_config_t s_net_cfg = {
     .ctx           = &s_ctx,
-    .wifi_ssid     = APP_WIFI_SSID,
-    .wifi_password = APP_WIFI_PASSWORD,
-    .broker_uri    = APP_MQTT_BROKER_URI,
-    .mqtt_username = APP_MQTT_USERNAME,
-    .mqtt_password = APP_MQTT_PASSWORD,
+    .wifi_ssid     = s_creds.wifi_ssid,
+    .wifi_password = s_creds.wifi_password,
+    .broker_uri    = s_creds.mqtt_uri,
+    .mqtt_username = s_creds.mqtt_username,
+    .mqtt_password = s_creds.mqtt_password,
+    .wifi_backoff_min_ms = APP_WIFI_BACKOFF_MIN_MS,
+    .wifi_backoff_max_ms = APP_WIFI_BACKOFF_MAX_MS,
+    .client_id           = APP_DEVICE_ID,
+    .mqtt_keepalive_s    = APP_MQTT_KEEPALIVE_S,
+    .telemetry_qos       = APP_MQTT_QOS_TELEMETRY,
     .topics = {
         .telemetry    = APP_MQTT_TOPIC_TELEMETRY,
         .status       = APP_MQTT_TOPIC_STATUS,
@@ -96,9 +136,24 @@ void app_main(void)
 {
     ESP_ERROR_CHECK(nvs_init());
 
-    /* Singletons de sistema necessários ao Wi-Fi; criados aqui uma única vez. */
+    const user_button_config_t btn_cfg = {
+        .pin           = APP_PIN_USER_BUTTON,
+        .active_low    = APP_BUTTON_ACTIVE_LOW,
+        .long_press_ms = APP_BUTTON_LONG_PRESS_MS,
+        .on_long_press = on_button_long_press,
+    };
+    ESP_ERROR_CHECK(user_button_start(&btn_cfg));   /* a config é copiada */
+
+    /* Singletons de sistema necessários ao Wi-Fi (STA e AP); criados aqui uma única vez. */
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+    /* Sem credenciais não arrancamos rede nem lógica: ficamos em modo configuração. */
+    if (!prov_load(&s_creds)) {
+        enter_provisioning_mode();      /* o AP corre em background; app_main retorna */
+        return;
+    }
+    ESP_LOGI(TAG, "board provisionada (ssid='%s', broker='%s')", s_creds.wifi_ssid, s_creds.mqtt_uri);
 
     ESP_ERROR_CHECK(ipc_init(&s_ctx));
 
