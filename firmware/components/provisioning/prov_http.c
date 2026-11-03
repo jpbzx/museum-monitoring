@@ -44,7 +44,7 @@ static const char FORM_HTML[] =
     "<label>Password<input name=\"wifi_pass\" type=\"password\" maxlength=\"63\"></label>"
     "<h2>MQTT</h2>"
     "<label>Broker URI<input name=\"mqtt_uri\" maxlength=\"127\" required "
-    "placeholder=\"mqtt://192.168.1.10:1883\"></label>"
+    "placeholder=\"mqtt://broker.emqx.io:1883\"></label>"
     "<label>Username<input name=\"mqtt_user\" maxlength=\"63\"></label>"
     "<label>Password<input name=\"mqtt_pass\" type=\"password\" maxlength=\"63\"></label>"
     "<button type=\"submit\">Guardar</button>"
