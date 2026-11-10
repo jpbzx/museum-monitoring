@@ -81,6 +81,12 @@
 #define APP_BUTTON_ACTIVE_LOW       true            /* pull-up interno + botão à massa */
 #define APP_BUTTON_LONG_PRESS_MS    6000            /* pressão longa: apagar credenciais */
 
+/* Botões que simulam sensores (bancada): CO2, VOC e iluminância. GPIO_NUM_NC desliga.
+ * Pull-up interno + botão à massa. Apagar quando houver sensores reais. */
+#define APP_PIN_SIM_BTN_1           GPIO_NUM_26     /* CO2 */
+#define APP_PIN_SIM_BTN_2           GPIO_NUM_32     /* VOC */
+#define APP_PIN_SIM_BTN_3           GPIO_NUM_33     /* iluminância */
+
 /* ---------------------------------------------------------------------------
  * Amostragem e energia (valores por omissão; o dashboard pode alterá-los)
  * Os limites min/max fazem parte do contrato e estão em app_types.h.
