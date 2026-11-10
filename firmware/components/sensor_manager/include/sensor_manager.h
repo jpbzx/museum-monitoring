@@ -21,12 +21,15 @@ extern "C" {
 #endif
 
 #define SENSOR_MANAGER_MAX_SENSORS 8
+#define SENSOR_MANAGER_SIM_BUTTONS 3    /* tem de coincidir com SENSOR_SIM_BUTTONS */
 
 typedef struct {
     gpio_num_t i2c_sda;
     gpio_num_t i2c_scl;
     uint32_t   i2c_freq_hz;
     gpio_num_t power_en;    /* GPIO_NUM_NC se a alimentação não for comutada */
+    /* Botões que simulam sensores (bancada); GPIO_NUM_NC desliga o canal. */
+    gpio_num_t sim_pins[SENSOR_MANAGER_SIM_BUTTONS];
 } sensor_manager_config_t;
 
 /** Configura o barramento e deteta os sensores presentes. */

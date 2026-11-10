@@ -18,6 +18,9 @@ static const char *TAG = "sensor_mgr";
 static const sensor_driver_t *const k_builtin_drivers[] = {
     &sensor_drv_sht4x,
     &sensor_drv_bh1750,
+    &sensor_drv_sim_btn0,
+    &sensor_drv_sim_btn1,
+    &sensor_drv_sim_btn2,
 };
 
 typedef struct {
@@ -121,6 +124,7 @@ esp_err_t sensor_manager_init(const sensor_manager_config_t *cfg)
     }
     s_mgr.bus.i2c_freq_hz = cfg->i2c_freq_hz;
 
+    sensor_drv_sim_buttons_set_pins(cfg->sim_pins);
     probe_drivers();
 
     if (!rail_must_stay_on()) {
