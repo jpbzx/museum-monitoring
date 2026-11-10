@@ -8,7 +8,8 @@ idf_component_register(
         "src/sensor_manager.c"
         "src/drivers/drv_sht4x.c"
         "src/drivers/drv_bh1750.c"
+        "src/drivers/drv_sim_buttons.c"
     INCLUDE_DIRS "include"
     PRIV_INCLUDE_DIRS "src/drivers"
-    REQUIRES app_types esp_driver_gpio esp_driver_i2c
+    REQUIRES app_types esp_driver_gpio esp_driver_i2c user_button
 )
