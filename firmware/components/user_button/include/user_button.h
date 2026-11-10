@@ -14,12 +14,14 @@ typedef void (*user_button_cb_t)(void *ctx);
 typedef struct {
     gpio_num_t       pin;
     bool             active_low;      /* true: premido = nível 0 (pull-up externo + botão à massa) */
-    uint32_t         long_press_ms;   /* tempo contínuo premido para disparar on_long_press */
+    uint32_t         long_press_ms;   /* tempo contínuo premido para disparar on_long_press; 0 = sem pressão longa */
     user_button_cb_t on_long_press;   /* chamado UMA vez por pressão, no contexto da tarefa do botão */
+    user_button_cb_t on_short_press;  /* chamado ao largar, se a pressão longa não disparou (pode ser NULL) */
     void            *ctx;
 } user_button_config_t;
 
-/** Configura o GPIO e arranca a tarefa que monitoriza o botão. A config é copiada. */
+/** Configura o GPIO e arranca a tarefa que monitoriza o botão. A config é copiada.
+ *  Pode ser chamada várias vezes, uma por botão. */
 esp_err_t user_button_start(const user_button_config_t *cfg);
 
 #ifdef __cplusplus

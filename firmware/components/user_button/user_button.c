@@ -1,12 +1,15 @@
 /*
- * Deteção de pressão longa por polling.
+ * Deteção de pressão curta/longa por polling.
  *
  * A tarefa lê o pino a cada USER_BUTTON_POLL_MS. Enquanto o botão está premido
  * acumula o tempo; a pressão só "acaba" depois de USER_BUTTON_RELEASE_SAMPLES
  * leituras seguidas em repouso (debounce de largada), para que um ressalto
  * durante os 6 s não reinicie a contagem.
+ *
+ * Cada botão tem a sua tarefa e o seu estado (alocado em user_button_start).
  */
 
+#include <stdlib.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
@@ -19,38 +22,40 @@
 
 static const char *TAG = "button";
 
-static user_button_config_t s_cfg;      /* cópia: a tarefa vive mais do que o chamador */
-
-static inline bool is_pressed(void)
+static inline bool is_pressed(const user_button_config_t *cfg)
 {
-    int level = gpio_get_level(s_cfg.pin);
-    return s_cfg.active_low ? (level == 0) : (level == 1);
+    int level = gpio_get_level(cfg->pin);
+    return cfg->active_low ? (level == 0) : (level == 1);
 }
 
 static void user_button_task(void *arg)
 {
+    const user_button_config_t *cfg = arg;     /* cópia própria deste botão, nunca libertada */
     uint32_t held_ms = 0;
     uint32_t idle_samples = 0;
     bool fired = false;
 
     for (;;) {
-        if (is_pressed()) {
+        if (is_pressed(cfg)) {
             idle_samples = 0;
             if (held_ms == 0) {
-                ESP_LOGI(TAG, "premido");
+                ESP_LOGI(TAG, "GPIO%d premido", (int)cfg->pin);
             }
             held_ms += USER_BUTTON_POLL_MS;
 
-            if (!fired && held_ms >= s_cfg.long_press_ms) {
+            if (!fired && cfg->long_press_ms != 0 && held_ms >= cfg->long_press_ms) {
                 fired = true;
-                ESP_LOGW(TAG, "pressão longa (%u ms)", (unsigned)held_ms);
-                if (s_cfg.on_long_press != NULL) {
-                    s_cfg.on_long_press(s_cfg.ctx);
+                ESP_LOGW(TAG, "GPIO%d pressão longa (%u ms)", (int)cfg->pin, (unsigned)held_ms);
+                if (cfg->on_long_press != NULL) {
+                    cfg->on_long_press(cfg->ctx);
                 }
             }
         } else if (held_ms > 0 && ++idle_samples >= USER_BUTTON_RELEASE_SAMPLES) {
-            ESP_LOGI(TAG, "largado após %u ms%s", (unsigned)held_ms,
-                     fired ? "" : " (pressão curta, ignorada)");
+            ESP_LOGI(TAG, "GPIO%d largado após %u ms%s", (int)cfg->pin, (unsigned)held_ms,
+                     fired ? "" : " (pressão curta)");
+            if (!fired && cfg->on_short_press != NULL) {
+                cfg->on_short_press(cfg->ctx);
+            }
             held_ms = 0;
             idle_samples = 0;
             fired = false;      /* rearma para a próxima pressão */
@@ -62,10 +67,10 @@ static void user_button_task(void *arg)
 
 esp_err_t user_button_start(const user_button_config_t *cfg)
 {
-    if (cfg == NULL || !GPIO_IS_VALID_GPIO(cfg->pin) || cfg->long_press_ms == 0) {
+    if (cfg == NULL || !GPIO_IS_VALID_GPIO(cfg->pin) ||
+        (cfg->long_press_ms == 0 && cfg->on_long_press != NULL)) {
         return ESP_ERR_INVALID_ARG;
     }
-    s_cfg = *cfg;
 
     /* GPIO34-39 (ex.: o 35) são só de entrada e NÃO têm pull interno: exigem resistência externa. */
     bool has_pull = GPIO_IS_VALID_OUTPUT_GPIO(cfg->pin);
@@ -85,7 +90,17 @@ esp_err_t user_button_start(const user_button_config_t *cfg)
         return err;
     }
 
+    user_button_config_t *own = malloc(sizeof(*own));   /* a tarefa vive mais do que o chamador */
+    if (own == NULL) {
+        return ESP_ERR_NO_MEM;
+    }
+    *own = *cfg;
+
     BaseType_t ok = xTaskCreate(user_button_task, "button", USER_BUTTON_TASK_STACK,
-                                NULL, USER_BUTTON_TASK_PRIO, NULL);
-    return ok == pdPASS ? ESP_OK : ESP_ERR_NO_MEM;
+                                own, USER_BUTTON_TASK_PRIO, NULL);
+    if (ok != pdPASS) {
+        free(own);
+        return ESP_ERR_NO_MEM;
+    }
+    return ESP_OK;
 }

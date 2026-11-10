@@ -1,4 +1,4 @@
-/*
+ /*
  * Ponto de composição do firmware.
  *
  * Arquitetura:
@@ -67,6 +67,7 @@ static const app_logic_config_t s_logic_cfg = {
         .i2c_scl     = APP_PIN_I2C_SCL,
         .i2c_freq_hz = APP_I2C_FREQ_HZ,
         .power_en    = APP_PIN_SENSOR_PWR_EN,
+        .sim_pins    = { APP_PIN_SIM_BTN_1, APP_PIN_SIM_BTN_2, APP_PIN_SIM_BTN_3 },
     },
     .sample_period_s = APP_SAMPLE_PERIOD_DEFAULT_S,
     .power_mode      = APP_POWER_MODE_DEFAULT,
