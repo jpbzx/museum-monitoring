@@ -14,7 +14,7 @@ import argparse
 import json
 import threading
 
-from mqtt_common import add_connection_args, add_node_args, die, make_client, topic_base
+from mqtt_common import add_connection_args, add_node_args, die, make_client, resolve_connection, topic_base
 
 # Limites do contrato: firmware/components/app_types/include/app_types.h
 SAMPLE_PERIOD_MIN_S = 5
@@ -70,6 +70,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    resolve_connection(args)
     topic = f"{topic_base(args.site, args.room, args.device)}/config/set"
     payload = build_payload(args)
 

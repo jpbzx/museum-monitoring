@@ -4,7 +4,7 @@
 Exemplos:
     .env/bin/python subscriber.py                       # todas as boards (museum/+/+/+/...)
     .env/bin/python subscriber.py --device node-01      # só uma board
-    .env/bin/python subscriber.py --host 192.168.1.10
+    .env/bin/python subscriber.py --uri mqtt://192.168.1.10:1883   # o mesmo URI dado à board
 """
 
 import argparse
@@ -13,7 +13,7 @@ from datetime import datetime
 
 import paho.mqtt.client as mqtt
 
-from mqtt_common import add_connection_args, add_node_args, die, make_client, topic_base
+from mqtt_common import add_connection_args, add_node_args, die, make_client, resolve_connection, topic_base
 
 CHANNELS = ("telemetry", "status", "config/state")
 
@@ -85,6 +85,7 @@ def main() -> None:
     add_connection_args(parser)
     add_node_args(parser, default="+")      # '+' = qualquer
     args = parser.parse_args()
+    resolve_connection(args)
 
     client = make_client(args, "sub")
     client.user_data_set({"pattern": topic_base(args.site, args.room, args.device)})
